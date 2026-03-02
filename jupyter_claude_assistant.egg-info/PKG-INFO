@@ -1,0 +1,359 @@
+Metadata-Version: 2.4
+Name: jupyter-claude-assistant
+Version: 1.0.0
+Summary: AI-powered coding assistant for JupyterLab using Claude
+Author: Jupyter Claude Assistant Team
+License: MIT
+Keywords: jupyter,jupyterlab,claude,anthropic,ai,assistant
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Education
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Framework :: Jupyter
+Classifier: Framework :: Jupyter :: JupyterLab
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: anthropic>=0.20.0
+Requires-Dist: jupyter-server>=2.0.0
+Requires-Dist: jupyterlab>=4.0.0
+Requires-Dist: tornado>=6.0
+Requires-Dist: click>=8.0
+Requires-Dist: rich>=12.0
+Requires-Dist: requests>=2.28.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Provides-Extra: widgets
+Requires-Dist: ipywidgets>=8.0; extra == "widgets"
+Dynamic: license-file
+Dynamic: requires-python
+
+# Jupyter Claude Assistant
+
+An AI-powered coding assistant for JupyterLab and Jupyter Notebook, powered by [Claude](https://anthropic.com/claude) (Anthropic).
+
+Works as both a **JupyterLab server extension** (with REST API) and a **CLI tool** (`jca`) for working with `.py` and `.ipynb` files from the terminal.
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| 💬 **Chat** | Ask Claude anything about your code with full notebook context |
+| ✨ **Complete** | Complete partial code cells or suggest the next cell in a notebook |
+| 📝 **Assignment Mode** | Paste a problem statement → get a fully written, explained notebook solution |
+| 🔧 **Fix Errors** | Paste code + error → get a working fix with explanation |
+| 🐍 **Conda Aware** | Auto-detects active environment, Python version, and installed packages |
+| 🧠 **Persistent Memory** | SQLite database stores interactions and improves suggestions over time |
+| 🔍 **Web Search** | Search PyPI, GitHub, and Stack Overflow for packages and solutions |
+| 🖥️ **CLI Tool** | `jca` command-line tool for non-JupyterLab workflows |
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.9+
+- Anaconda or Miniconda (recommended)
+- JupyterLab 4.0+ (for server extension)
+- An [Anthropic API key](https://console.anthropic.com/)
+
+### Install
+
+```bash
+# Install the package
+pip install jupyter-claude-assistant
+
+# Or install from source
+git clone https://github.com/your-org/jupyter-claude-assistant
+cd jupyter-claude-assistant
+pip install -e .
+
+# Enable the server extension
+jupyter server extension enable --py jupyter_claude_assistant
+```
+
+### Set Your API Key
+
+```bash
+# Option 1: Environment variable (recommended)
+export ANTHROPIC_API_KEY="sk-ant-your-key-here"
+
+# Option 2: JCA config file
+jca config --set-key sk-ant-your-key-here
+
+# Option 3: Set in JupyterLab settings panel after launching
+```
+
+---
+
+## Usage
+
+### In JupyterLab (Server Extension + HTML Panel)
+
+1. Start JupyterLab:
+   ```bash
+   jupyter lab
+   ```
+
+2. The Claude Assistant panel is accessible at:
+   - **Via proxy**: `http://localhost:8888/jupyter-claude/static/panel.html`
+   - **Via widget** (in a notebook cell): See below
+
+3. Use REST API from any notebook:
+   ```python
+   import requests
+
+   # Chat with Claude
+   r = requests.post('http://localhost:8888/jupyter-claude/chat',
+       json={"message": "How do I normalize a pandas DataFrame?"},
+       cookies={"username-localhost-8888": "..."})  # Your Jupyter token
+   print(r.json()['response'])
+   ```
+
+### In Jupyter Notebook (Widget UI)
+
+Open a new notebook cell and run:
+
+```python
+from jupyter_claude_assistant import show_panel
+show_panel()  # Opens interactive panel with all features
+```
+
+This creates an interactive panel with tabs for Chat, Complete, Assign, Fix, and Environment info.
+
+### CLI Tool
+
+After installation, the `jca` command is available:
+
+```bash
+# Chat about your code
+jca chat "How do I read multiple CSV files into one dataframe?"
+
+# Chat with notebook context
+jca chat "What does this notebook do?" --notebook myanalysis.ipynb
+
+# Explain a notebook or script
+jca explain myanalysis.ipynb         # Explain entire notebook
+jca explain myanalysis.ipynb --cell 3 # Explain cell 3
+jca explain myscript.py               # Explain a Python file
+
+# Fix errors
+jca fix myanalysis.ipynb              # Auto-find and fix error cell
+jca fix myanalysis.ipynb --cell 5     # Fix specific cell
+jca fix myscript.py                   # Run script and fix any runtime errors
+
+# Complete an assignment
+jca assign "Build a linear regression model on the Boston housing dataset with cross-validation" \
+    --output solution.ipynb
+
+# Code completion
+jca complete notebook.ipynb           # Complete last code cell
+jca complete notebook.ipynb --cell 4  # Complete specific cell
+
+# Search for packages and solutions
+jca search "time series forecasting"
+jca search "dataframe pivot" --source stackoverflow
+jca search "gradient boosting" --source pypi
+
+# Show environment info
+jca env
+
+# View usage statistics
+jca stats
+
+# Configure API key and model
+jca config --set-key sk-ant-your-key
+jca config --set-model claude-opus-4-6
+```
+
+---
+
+## API Reference
+
+The server extension provides a REST API at `/jupyter-claude/`:
+
+### `POST /jupyter-claude/chat`
+```json
+{
+  "message": "How do I read a CSV file?",
+  "cells": [...],       // Optional: notebook cells for context
+  "current_cell": 3,   // Optional: index of active cell
+  "env_name": "myenv"  // Optional: conda environment name
+}
+```
+
+### `POST /jupyter-claude/complete`
+```json
+{
+  "code": "import pandas as pd\ndf = pd.read_",
+  "mode": "complete",   // or "next_cell"
+  "goal": "optional goal description",
+  "cells": [...]
+}
+```
+
+### `POST /jupyter-claude/assignment`
+```json
+{
+  "problem": "Build a machine learning pipeline that...",
+  "output_format": "cells",  // or "markdown"
+  "env_name": "myenv",
+  "cells": [...]
+}
+```
+
+### `POST /jupyter-claude/explain`
+```json
+{
+  "code": "df.groupby('col').agg({'val': 'mean'})",
+  "output": "Optional output text",
+  "error": "Optional error message"
+}
+```
+
+### `POST /jupyter-claude/fix`
+```json
+{
+  "code": "df.groupby('col').agger({'val': 'mean'})",
+  "error": "AttributeError: 'DataFrameGroupBy' object has no attribute 'agger'",
+  "cells": [...]
+}
+```
+
+### `GET /jupyter-claude/conda`
+Returns active conda environment, all environments, and installed packages.
+
+### `GET /jupyter-claude/search?q=QUERY&source=all`
+Search PyPI, GitHub, and Stack Overflow. `source` can be `all`, `pypi`, `github`, `stackoverflow`.
+
+### `GET /jupyter-claude/memory?type=stats`
+Get usage statistics, skills, recent interactions. `type` can be `stats`, `skills`, `recent`, `snippets`.
+
+### `POST /jupyter-claude/memory`
+Save skills, snippets, ratings, and preferences.
+
+### `GET/POST /jupyter-claude/config`
+Get or set extension configuration (API key, model).
+
+---
+
+## Architecture
+
+```
+jupyter-claude-assistant/
+├── jupyter_claude_assistant/       # Python server extension
+│   ├── __init__.py                 # Extension entry points
+│   ├── _version.py
+│   ├── extension.py                # Handler registration
+│   ├── widget.py                   # ipywidgets-based UI
+│   ├── handlers/                   # Tornado REST handlers
+│   │   ├── base_handler.py         # Shared base (APIHandler + services)
+│   │   ├── chat_handler.py
+│   │   ├── complete_handler.py
+│   │   ├── explain_handler.py
+│   │   ├── fix_handler.py
+│   │   ├── assign_handler.py
+│   │   ├── conda_handler.py
+│   │   ├── memory_handler.py
+│   │   ├── search_handler.py
+│   │   └── config_handler.py
+│   └── services/                   # Core services
+│       ├── claude_service.py       # Anthropic API wrapper
+│       ├── conda_service.py        # Conda environment detection
+│       ├── memory_service.py       # SQLite persistence
+│       └── search_service.py       # PyPI/GitHub/SO search
+├── cli/
+│   └── jca.py                      # Click-based CLI tool
+├── frontend/
+│   └── src/panel.html              # Standalone HTML panel UI
+└── tests/
+    ├── test_claude_service.py
+    ├── test_conda_service.py
+    └── test_memory_service.py
+```
+
+### Component Overview
+
+- **ClaudeService**: Wraps the Anthropic Python SDK. Builds notebook context from cells, handles all prompt engineering, and exposes high-level methods (`complete`, `explain_code`, `suggest_fix`, `complete_assignment`).
+
+- **CondaService**: Detects the active conda environment via `CONDA_PREFIX` environment variables and `conda env list --json`. Caches package lists for performance.
+
+- **MemoryService**: SQLite database at `~/.jupyter_claude/memory.db`. Stores interactions with ratings, reusable skills/code patterns, snippet library, search result cache, and user preferences. Improves suggestions over time.
+
+- **SearchService**: Fetches from PyPI JSON API, GitHub Search API (repos), and Stack Exchange API (Stack Overflow). Results are cached in the MemoryService.
+
+---
+
+## Configuration
+
+The assistant reads configuration from (in order of priority):
+
+1. `ANTHROPIC_API_KEY` environment variable
+2. `~/.jupyter_claude/config.json`
+3. JupyterLab settings (via `/jupyter-claude/config` endpoint)
+
+### Available Models
+
+| Model | ID | Best For |
+|---|---|---|
+| Claude Sonnet 4.6 | `claude-sonnet-4-6` | Default — best balance of speed and quality |
+| Claude Opus 4.6 | `claude-opus-4-6` | Complex problems, assignments |
+| Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | Quick completions, high throughput |
+
+### Memory Database
+
+The local skills database is stored at `~/.jupyter_claude/memory.db`. It contains:
+
+- **Interactions**: Every request/response pair with timestamps and optional ratings
+- **Skills**: Saved code patterns with tags (e.g., "pandas pivot table", "sklearn pipeline")
+- **Snippets**: Saved code snippets organized by tag and conda environment
+- **Search Cache**: Cached PyPI/GitHub/SO results (default 1-hour TTL)
+- **Preferences**: Model selection, display preferences, etc.
+
+---
+
+## Development
+
+### Running Tests
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_memory_service.py -v
+```
+
+### Adding Custom Features
+
+To add a new endpoint:
+
+1. Create `jupyter_claude_assistant/handlers/my_handler.py` extending `BaseClaudeHandler`
+2. Add the handler to `extension.py`'s `setup_handlers()` function
+3. Add corresponding method to `ClaudeService` if needed
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+- Built with [Anthropic Claude](https://anthropic.com/claude) API
+- Extends [JupyterLab](https://jupyterlab.readthedocs.io/) server extension framework
+- CLI powered by [Click](https://click.palletsprojects.com/) and [Rich](https://rich.readthedocs.io/)

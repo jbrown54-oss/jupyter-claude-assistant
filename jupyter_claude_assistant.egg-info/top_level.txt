@@ -1,0 +1,2 @@
+cli
+jupyter_claude_assistant

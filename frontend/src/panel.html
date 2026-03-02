@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Assistant</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    background: #fff;
+    color: #24292e;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 10px 14px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .header h1 { font-size: 15px; font-weight: 700; }
+  .header .subtitle { font-size: 10px; opacity: 0.85; margin-top: 2px; }
+
+  .tabs {
+    display: flex;
+    background: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    color: #586069;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .tab-btn.active {
+    color: #0366d6;
+    border-bottom-color: #0366d6;
+    font-weight: 600;
+  }
+
+  .tab-btn:hover:not(.active) { background: #e9ecef; }
+
+  .content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tab-pane {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .tab-pane.active { display: flex; }
+
+  /* Chat Tab */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #fafbfc;
+    min-height: 0;
+  }
+
+  .message {
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .message.user {
+    background: #0366d6;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 12px 12px 2px 12px;
+    margin-left: 20%;
+    font-size: 12px;
+  }
+
+  .message.assistant {
+    background: #f0f4f8;
+    padding: 8px 10px;
+    border-radius: 2px 12px 12px 12px;
+    font-size: 12px;
+  }
+
+  .message.assistant code {
+    background: #e8eef4;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'Monaco', monospace;
+    font-size: 11px;
+  }
+
+  .message.assistant pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 6px 0;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .message.error {
+    color: #d73a49;
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .chat-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  textarea {
+    width: 100%;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  textarea:focus { border-color: #0366d6; }
+
+  .btn-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: #0366d6; color: white; }
+  .btn-primary:hover { background: #0256b0; }
+  .btn-success { background: #28a745; color: white; }
+  .btn-success:hover { background: #218838; }
+  .btn-warning { background: #ffc107; color: #333; }
+  .btn-warning:hover { background: #e0a800; }
+  .btn-danger { background: #dc3545; color: white; }
+  .btn-danger:hover { background: #c82333; }
+  .btn-secondary { background: #6c757d; color: white; }
+  .btn-secondary:hover { background: #5a6268; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #586069;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+    outline: none;
+  }
+
+  input:focus { border-color: #0366d6; }
+
+  .section { margin-bottom: 10px; }
+
+  .output-box {
+    flex: 1;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 8px;
+    overflow-y: auto;
+    background: #fafbfc;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    min-height: 0;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-bar {
+    padding: 4px 10px;
+    font-size: 10px;
+    color: #586069;
+    background: #f6f8fa;
+    border-top: 1px solid #e1e4e8;
+    flex-shrink: 0;
+  }
+
+  .env-card {
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .env-card .env-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #24292e;
+  }
+
+  .env-card .env-detail {
+    font-size: 11px;
+    color: #586069;
+    margin-top: 2px;
+  }
+
+  .pkg-badge {
+    display: inline-block;
+    background: #e1e4e8;
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    margin: 2px;
+    color: #24292e;
+  }
+
+  .pkg-badge.key { background: #dbeafe; color: #1d4ed8; }
+
+  .warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 11px;
+    color: #856404;
+    margin-bottom: 8px;
+  }
+
+  /* Markdown rendering in messages */
+  .md-content h1, .md-content h2, .md-content h3 {
+    margin: 8px 0 4px;
+    font-size: 13px;
+  }
+  .md-content p { margin: 4px 0; }
+  .md-content ul, .md-content ol { margin: 4px 0 4px 16px; }
+  .md-content li { margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🤖 Claude Assistant</h1>
+  <div class="subtitle" id="model-display">Powered by Anthropic</div>
+</div>
+
+<!-- Tab bar -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat</button>
+  <button class="tab-btn" onclick="switchTab('complete')">✨ Complete</button>
+  <button class="tab-btn" onclick="switchTab('assign')">📝 Assign</button>
+  <button class="tab-btn" onclick="switchTab('fix')">🔧 Fix</button>
+  <button class="tab-btn" onclick="switchTab('search')">🔍 Search</button>
+  <button class="tab-btn" onclick="switchTab('env')">🐍 Env</button>
+  <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
+</div>
+
+<div class="content">
+
+  <!-- CHAT TAB -->
+  <div class="tab-pane active" id="tab-chat">
+    <div class="chat-messages" id="chat-messages">
+      <div class="message assistant">
+        👋 Hello! I'm your Claude coding assistant. Ask me anything about your code, or switch to the other tabs for specialized tools.
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chat-input" placeholder="Ask Claude anything... (Ctrl+Enter to send)" rows="3"
+                onkeydown="handleChatKey(event)"></textarea>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="sendChat()">Send</button>
+        <label style="margin:0; display:flex; align-items:center; gap:4px; font-weight:normal;">
+          <input type="checkbox" id="include-context" checked> Include notebook context
+        </label>
+        <button class="btn-secondary btn-sm" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETE TAB -->
+  <div class="tab-pane" id="tab-complete">
+    <div class="section">
+      <label>Partial code to complete:</label>
+      <textarea id="complete-input" placeholder="Paste partial code here..." rows="6"></textarea>
+    </div>
+    <div class="section">
+      <label>Goal (optional):</label>
+      <input type="text" id="complete-goal" placeholder="e.g., clean the dataframe and handle missing values">
+    </div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button class="btn-success" onclick="completeCode()">Complete Code</button>
+      <button class="btn-primary" onclick="nextCell()">Suggest Next Cell</button>
+    </div>
+    <label>Result:</label>
+    <div class="output-box" id="complete-output">Results will appear here...</div>
+  </div>
+
+  <!-- ASSIGN TAB -->
+  <div class="tab-pane" id="tab-assign">
+    <div class="section">
+      <label>Assignment / Problem statement:</label>
+      <textarea id="assign-input" rows="5"
+        placeholder="Describe your assignment here. Be specific!&#10;&#10;Example: Build a machine learning pipeline that:&#10;1. Loads the Iris dataset&#10;2. Splits into train/test&#10;3. Trains a Random Forest classifier&#10;4. Evaluates with accuracy, precision, recall&#10;5. Plots the confusion matrix"></textarea>
+    </div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button class="btn-warning" onclick="completeAssignment()">Complete Assignment</button>
+    </div>
+    <label>Solution:</label>
+    <div class="output-box" id="assign-output">Your assignment solution will appear here...</div>
+  </div>
+
+  <!-- FIX TAB -->
+  <div class="tab-pane" id="tab-fix">
+    <div class="section">
+      <label>Code with error:</label>
+      <textarea id="fix-code" rows="4" placeholder="Paste the code that is causing an error..."></textarea>
+    </div>
+    <div class="section">
+      <label>Error message:</label>
+      <textarea id="fix-error" rows="3" placeholder="Paste the error/traceback here..."></textarea>
+    </div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button class="btn-danger" onclick="fixError()">Fix Error</button>
+    </div>
+    <label>Fix:</label>
+    <div class="output-box" id="fix-output">The fix will appear here...</div>
+  </div>
+
+  <!-- SEARCH TAB -->
+  <div class="tab-pane" id="tab-search">
+    <div class="section">
+      <label>Search query:</label>
+      <div class="btn-row">
+        <input type="text" id="search-query" placeholder="e.g., dataframe groupby operations" style="flex:1;">
+        <select id="search-source" style="padding:5px; border:1px solid #e1e4e8; border-radius:4px; font-size:12px;">
+          <option value="all">All sources</option>
+          <option value="pypi">PyPI</option>
+          <option value="github">GitHub</option>
+          <option value="stackoverflow">Stack Overflow</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button class="btn-primary" onclick="doSearch()">Search</button>
+    </div>
+    <div class="output-box" id="search-output">Search results will appear here...</div>
+  </div>
+
+  <!-- ENV TAB -->
+  <div class="tab-pane" id="tab-env">
+    <button class="btn-secondary btn-sm" onclick="loadEnv()" style="margin-bottom:8px; width:fit-content;">
+      Refresh
+    </button>
+    <div id="env-content" style="overflow-y:auto; flex:1;">
+      <div style="color:#586069; font-size:12px;">Loading environment info...</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-pane" id="tab-settings">
+    <div class="section">
+      <label>Anthropic API Key:</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-...">
+      <div style="font-size:10px; color:#586069; margin-top:3px;">
+        Or set ANTHROPIC_API_KEY environment variable
+      </div>
+    </div>
+    <div class="section">
+      <label>Model:</label>
+      <select id="model-select" style="width:100%; padding:5px; border:1px solid #e1e4e8; border-radius:4px; font-size:12px;">
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6 (Recommended)</option>
+        <option value="claude-opus-4-6">claude-opus-4-6 (Most capable)</option>
+        <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (Fastest)</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveSettings()" style="margin-bottom:12px;">Save Settings</button>
+
+    <div class="section">
+      <label>Usage Statistics:</label>
+      <div class="output-box" id="stats-output" style="max-height:150px;">Loading stats...</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="status-bar" id="status-bar">Ready</div>
+
+<script>
+// Base URL for Jupyter server extension
+const BASE_URL = (window.location.origin || 'http://localhost:8888') + '/jupyter-claude';
+
+let currentEnvName = '';
+
+// -----------------------------------------------------------------------------
+// Tab switching
+// -----------------------------------------------------------------------------
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'env') loadEnv();
+  if (name === 'settings') loadStats();
+}
+
+// -----------------------------------------------------------------------------
+// Status bar
+// -----------------------------------------------------------------------------
+
+function setStatus(msg, color) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.style.color = color || '#586069';
+}
+
+// -----------------------------------------------------------------------------
+// API Calls
+// -----------------------------------------------------------------------------
+
+async function apiFetch(endpoint, method, body) {
+  try {
+    const opts = {
+      method: method || 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(BASE_URL + endpoint, opts);
+    const data = await resp.json();
+    return data;
+  } catch (e) {
+    setStatus('Connection error: ' + e.message, '#d73a49');
+    return { error: e.message };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Markdown rendering (lightweight)
+// -----------------------------------------------------------------------------
+
+function renderMarkdown(text) {
+  // Basic markdown rendering
+  return text
+    .replace(/```(\w+)?\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hup]|<li)(.+)$/gm, '$1');
+}
+
+// -----------------------------------------------------------------------------
+// Chat
+// -----------------------------------------------------------------------------
+
+function handleChatKey(e) {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+function appendMessage(cls, html) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'message ' + cls;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  appendMessage('user', msg);
+  input.value = '';
+  setStatus('Thinking...', '#0366d6');
+
+  const includeCtx = document.getElementById('include-context').checked;
+
+  const data = await apiFetch('/chat', 'POST', {
+    message: msg,
+    cells: [],
+    env_name: currentEnvName || undefined,
+  });
+
+  if (data.error) {
+    appendMessage('error', '⚠️ ' + data.error);
+    setStatus('Error: ' + data.error, '#d73a49');
+  } else {
+    appendMessage('assistant md-content', renderMarkdown(data.response));
+    setStatus('✓ Response received (' + data.response.length + ' chars)');
+  }
+}
+
+function clearChat() {
+  document.getElementById('chat-messages').innerHTML = `
+    <div class="message assistant">Chat cleared. How can I help you?</div>
+  `;
+}
+
+// -----------------------------------------------------------------------------
+// Complete
+// -----------------------------------------------------------------------------
+
+async function completeCode() {
+  const code = document.getElementById('complete-input').value.trim();
+  if (!code) return;
+
+  setStatus('Completing code...', '#0366d6');
+  document.getElementById('complete-output').textContent = 'Working...';
+
+  const data = await apiFetch('/complete', 'POST', {
+    code,
+    mode: 'complete',
+    cells: [],
+  });
+
+  if (data.error) {
+    document.getElementById('complete-output').textContent = 'Error: ' + data.error;
+    setStatus('Error', '#d73a49');
+  } else {
+    document.getElementById('complete-output').innerHTML = renderMarkdown(data.response);
+    setStatus('✓ Completion ready');
+  }
+}
+
+async function nextCell() {
+  const goal = document.getElementById('complete-goal').value.trim();
+  setStatus('Suggesting next cell...', '#0366d6');
+  document.getElementById('complete-output').textContent = 'Working...';
+
+  const data = await apiFetch('/complete', 'POST', {
+    mode: 'next_cell',
+    goal,
+    cells: [],
+  });
+
+  if (data.error) {
+    document.getElementById('complete-output').textContent = 'Error: ' + data.error;
+    setStatus('Error', '#d73a49');
+  } else {
+    document.getElementById('complete-output').innerHTML = renderMarkdown(data.response);
+    setStatus('✓ Next cell suggestion ready');
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Assignment
+// -----------------------------------------------------------------------------
+
+async function completeAssignment() {
+  const problem = document.getElementById('assign-input').value.trim();
+  if (!problem) return;
+
+  setStatus('Working on assignment... this may take a moment', '#0366d6');
+  document.getElementById('assign-output').textContent = 'Claude is working on your assignment...';
+
+  const data = await apiFetch('/assignment', 'POST', {
+    problem,
+    output_format: 'markdown',
+    env_name: currentEnvName || undefined,
+  });
+
+  if (data.error) {
+    document.getElementById('assign-output').textContent = 'Error: ' + data.error;
+    setStatus('Error', '#d73a49');
+  } else {
+    document.getElementById('assign-output').innerHTML = renderMarkdown(data.response);
+    setStatus('✓ Assignment complete! Env: ' + (data.conda_env || 'unknown'));
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Fix
+// -----------------------------------------------------------------------------
+
+async function fixError() {
+  const code = document.getElementById('fix-code').value.trim();
+  const error = document.getElementById('fix-error').value.trim();
+  if (!code || !error) {
+    setStatus('Please provide both code and error message', '#d73a49');
+    return;
+  }
+
+  setStatus('Analyzing error...', '#0366d6');
+  document.getElementById('fix-output').textContent = 'Analyzing...';
+
+  const data = await apiFetch('/fix', 'POST', { code, error, cells: [] });
+
+  if (data.error) {
+    document.getElementById('fix-output').textContent = 'Error: ' + data.error;
+    setStatus('Error', '#d73a49');
+  } else {
+    document.getElementById('fix-output').innerHTML = renderMarkdown(data.response);
+    setStatus('✓ Fix ready!');
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Search
+// -----------------------------------------------------------------------------
+
+async function doSearch() {
+  const query = document.getElementById('search-query').value.trim();
+  const source = document.getElementById('search-source').value;
+  if (!query) return;
+
+  setStatus('Searching...', '#0366d6');
+  document.getElementById('search-output').textContent = 'Searching...';
+
+  const data = await apiFetch(`/search?q=${encodeURIComponent(query)}&source=${source}`);
+
+  if (data.error) {
+    document.getElementById('search-output').textContent = 'Error: ' + data.error;
+    setStatus('Error', '#d73a49');
+    return;
+  }
+
+  let html = `<strong>Results for: "${query}"</strong><br><br>`;
+
+  if (data.pypi && data.pypi.length > 0) {
+    html += '<strong>📦 PyPI Packages:</strong><ul>';
+    data.pypi.forEach(p => {
+      html += `<li><strong>${p.name}</strong> v${p.version || '?'} — ${p.summary || ''}</li>`;
+    });
+    html += '</ul>';
+  }
+
+  if (data.github && data.github.length > 0) {
+    html += '<br><strong>🐙 GitHub:</strong><ul>';
+    data.github.forEach(r => {
+      html += `<li><a href="${r.url}" target="_blank">${r.name}</a> (⭐${r.stars}) — ${r.description || ''}</li>`;
+    });
+    html += '</ul>';
+  }
+
+  if (data.stackoverflow && data.stackoverflow.length > 0) {
+    html += '<br><strong>💬 Stack Overflow:</strong><ul>';
+    data.stackoverflow.forEach(q => {
+      const status = q.is_answered ? '✅' : '❓';
+      html += `<li>${status} <a href="${q.url}" target="_blank">${q.title}</a> (${q.score} votes)</li>`;
+    });
+    html += '</ul>';
+  }
+
+  if (!data.pypi?.length && !data.github?.length && !data.stackoverflow?.length) {
+    html += 'No results found.';
+  }
+
+  document.getElementById('search-output').innerHTML = html;
+  setStatus('✓ Search complete');
+}
+
+// -----------------------------------------------------------------------------
+// Environment
+// -----------------------------------------------------------------------------
+
+async function loadEnv() {
+  const content = document.getElementById('env-content');
+  content.innerHTML = '<div style="color:#586069; font-size:12px;">Loading...</div>';
+
+  const data = await apiFetch('/conda');
+
+  if (data.error) {
+    content.innerHTML = '<div style="color:#d73a49;">Error: ' + data.error + '</div>';
+    return;
+  }
+
+  const env = data.active || {};
+  currentEnvName = env.name || '';
+
+  const keyPkgs = ['numpy', 'pandas', 'matplotlib', 'scipy', 'sklearn', 'tensorflow',
+                    'torch', 'seaborn', 'plotly', 'jupyter', 'requests'];
+  const installed = (data.packages || []).map(p => p.name.toLowerCase());
+  const keyInstalled = keyPkgs.filter(p => installed.includes(p));
+
+  let html = `
+    <div class="env-card">
+      <div class="env-name">${env.name || 'Unknown'}</div>
+      <div class="env-detail">Python ${env.python_version || '?'}</div>
+      <div class="env-detail" style="word-break:break-all;">${env.path || ''}</div>
+    </div>
+    <div style="font-size:11px; color:#586069; margin-bottom:6px;">
+      ${data.total_packages || 0} packages installed
+    </div>
+  `;
+
+  if (keyInstalled.length > 0) {
+    html += '<div style="margin-bottom:8px;"><strong style="font-size:11px;">Key packages:</strong><br>';
+    keyInstalled.forEach(p => {
+      html += `<span class="pkg-badge key">${p}</span>`;
+    });
+    html += '</div>';
+  }
+
+  if (data.environments && data.environments.length > 1) {
+    html += '<strong style="font-size:11px;">All environments:</strong>';
+    data.environments.forEach(e => {
+      const active = e.name === env.name ? ' (active)' : '';
+      html += `<div style="font-size:11px; padding:3px 0; color:#24292e;">${e.name}${active}</div>`;
+    });
+  }
+
+  content.innerHTML = html;
+  setStatus('✓ Environment loaded: ' + (env.name || 'unknown'));
+}
+
+// -----------------------------------------------------------------------------
+// Stats
+// -----------------------------------------------------------------------------
+
+async function loadStats() {
+  const output = document.getElementById('stats-output');
+  const data = await apiFetch('/memory?type=stats');
+
+  if (data.error) {
+    output.textContent = 'Error loading stats';
+    return;
+  }
+
+  const stats = data.stats || {};
+  let text = `Total interactions: ${stats.total_interactions || 0}\n`;
+  text += `Average rating: ${stats.average_rating || 'N/A'}/5\n\n`;
+  text += 'By type:\n';
+  for (const [type, count] of Object.entries(stats.by_type || {})) {
+    text += `  ${type}: ${count}\n`;
+  }
+  output.textContent = text;
+}
+
+// -----------------------------------------------------------------------------
+// Settings
+// -----------------------------------------------------------------------------
+
+async function saveSettings() {
+  const key = document.getElementById('api-key-input').value.trim();
+  const model = document.getElementById('model-select').value;
+
+  const body = { model };
+  if (key) body.api_key = key;
+
+  setStatus('Saving settings...', '#0366d6');
+  const data = await apiFetch('/config', 'POST', body);
+
+  if (data.error) {
+    setStatus('Error: ' + data.error, '#d73a49');
+  } else {
+    setStatus('✓ Settings saved');
+    document.getElementById('model-display').textContent = 'Model: ' + model;
+    if (key) document.getElementById('api-key-input').value = '';
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Init
+// -----------------------------------------------------------------------------
+
+async function init() {
+  // Load config
+  const config = await apiFetch('/config');
+  if (config.model) {
+    document.getElementById('model-select').value = config.model;
+    document.getElementById('model-display').textContent = 'Model: ' + config.model;
+  }
+  if (!config.has_api_key) {
+    setStatus('⚠️ No API key configured — go to Settings tab', '#d73a49');
+  } else {
+    setStatus('Ready');
+  }
+
+  // Load env
+  loadEnv();
+}
+
+// Enter key in search
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('search-query');
+  if (searchInput) {
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+  }
+  init();
+});
+</script>
+</body>
+</html>

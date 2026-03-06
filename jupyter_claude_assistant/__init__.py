@@ -10,6 +10,7 @@ This package provides:
 """
 
 from ._version import __version__
+from .widget import show_panel
 
 def _jupyter_server_extension_points():
     """Return a list of server extension entry points."""

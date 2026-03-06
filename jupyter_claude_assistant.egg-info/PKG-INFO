@@ -1,9 +1,12 @@
 Metadata-Version: 2.4
 Name: jupyter-claude-assistant
-Version: 1.0.0
+Version: 1.0.1
 Summary: AI-powered coding assistant for JupyterLab using Claude
-Author: Jupyter Claude Assistant Team
+Author: Jupyter Claude Assistant
+Author-email: Jonas Brown <brownjonasa@gmail.com>
 License: MIT
+Project-URL: Homepage, https://github.com/jbrown54-oss/jupyter-claude-assistant
+Project-URL: Repository, https://github.com/jbrown54-oss/jupyter-claude-assistant
 Keywords: jupyter,jupyterlab,claude,anthropic,ai,assistant
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
@@ -31,6 +34,7 @@ Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
 Provides-Extra: widgets
 Requires-Dist: ipywidgets>=8.0; extra == "widgets"
+Dynamic: author
 Dynamic: license-file
 Dynamic: requires-python
 
@@ -73,7 +77,7 @@ Works as both a **JupyterLab server extension** (with REST API) and a **CLI tool
 pip install jupyter-claude-assistant
 
 # Or install from source
-git clone https://github.com/your-org/jupyter-claude-assistant
+git clone https://github.com/jbrown54-oss/jupyter-claude-assistant
 cd jupyter-claude-assistant
 pip install -e .
 

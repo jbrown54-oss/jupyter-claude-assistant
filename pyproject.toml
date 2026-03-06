@@ -9,8 +9,12 @@ description = "AI-powered coding assistant for JupyterLab using Claude"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
-authors = [{ name = "Jupyter Claude Assistant Team" }]
+authors = [{ name = "Jonas Brown", email = "brownjonasa@gmail.com" }]
 keywords = ["jupyter", "jupyterlab", "claude", "anthropic", "ai", "assistant"]
+
+[project.urls]
+Homepage = "https://github.com/jbrown54-oss/jupyter-claude-assistant"
+Repository = "https://github.com/jbrown54-oss/jupyter-claude-assistant"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

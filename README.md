@@ -37,7 +37,7 @@ Works as both a **JupyterLab server extension** (with REST API) and a **CLI tool
 pip install jupyter-claude-assistant
 
 # Or install from source
-git clone https://github.com/your-org/jupyter-claude-assistant
+git clone https://github.com/jbrown54-oss/jupyter-claude-assistant
 cd jupyter-claude-assistant
 pip install -e .
 
